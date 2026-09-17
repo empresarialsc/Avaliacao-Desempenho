@@ -200,12 +200,10 @@
   button.submit:disabled{ background: #9AA0BE; box-shadow:none; cursor:default; }
   .actions .foot-note{ text-align:center; font-size:12.5px; color: var(--muted); margin-top:12px; }
   .actions .rascunho-status{ text-align:center; font-size:12.5px; color: var(--s5); margin-top:8px; min-height:16px; }
-  .rascunho-botoes{ display:flex; gap:10px; margin-bottom:10px; }
-  @media (max-width: 480px){ .rascunho-botoes{ flex-direction:column; } }
   button.btn-secundario{
-    flex:1; width:100%; background:#fff; color: var(--navy); border:1.5px solid var(--navy);
+    width:100%; background:#fff; color: var(--navy); border:1.5px solid var(--navy);
     border-radius: 10px; padding: 13px 16px; font-family: var(--font-body); font-weight: 600;
-    font-size: 13.5px; cursor:pointer; transition: background .15s;
+    font-size: 14.5px; cursor:pointer; margin-bottom:10px; transition: background .15s;
   }
   button.btn-secundario:hover{ background: var(--blue-soft); }
 
@@ -399,10 +397,7 @@
     </section>
 
     <div class="actions">
-      <div class="rascunho-botoes">
-        <button type="button" class="btn-secundario" id="btnSalvarRascunho">Salvar rascunho</button>
-        <button type="button" class="btn-secundario" id="btnBaixarRascunho">Baixar rascunho (.html)</button>
-      </div>
+      <button type="button" class="btn-secundario" id="btnBaixarRascunho">Baixar rascunho (.html)</button>
       <button type="submit" class="submit" id="submitBtn">Gerar e enviar avaliação</button>
       <p class="foot-note">Um PDF é gerado automaticamente e enviado ao avaliador e ao avaliado, com cópia salva no Drive e registrada na planilha do escritório.</p>
       <p class="rascunho-status" id="rascunhoStatus"></p>
@@ -431,12 +426,12 @@
    CONFIGURAÇÃO — preencha antes de publicar
    ========================================================================= */
 const CONFIG = {
-  MODO_DEMO: false,
+  MODO_DEMO: true,
   // URL do Web App do Google Apps Script (veja Code.gs / INSTRUCOES.md).
   // Um único endpoint recebe o PDF gerado no navegador e cuida de tudo do
   // lado do escritório: guarda o PDF no Drive, registra a linha na planilha
   // "Respostas" e envia o e-mail com o PDF anexado ao avaliador e ao avaliado.
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwhucztI8gJSfroIVribZVsRaXR4TBQtAFYQJTbDj04izkwNoQbYaly3qmLT5xBij__Pg/exec"
+  APPS_SCRIPT_URL: "SUA_URL_DO_APPS_SCRIPT"
 };
 
 document.getElementById('demoFlag').style.display = CONFIG.MODO_DEMO ? 'block' : 'none';
@@ -1109,11 +1104,11 @@ async function enviarParaAppsScript(dados, protocolo, pdfBase64, nomeArquivo){
 }
 
 /* =========================================================================
-   RASCUNHO — salva o preenchimento no navegador (localStorage) para o
-   avaliador continuar depois, antes de enviar a versão final. Fica salvo
-   apenas neste navegador/computador — não sincroniza entre dispositivos.
+   RASCUNHO — a única forma de retomar uma avaliação parcialmente preenchida
+   é baixando um arquivo .html com os dados atuais gravados dentro dele (veja
+   o botão "Baixar rascunho"). Nada fica salvo no navegador: sem o arquivo
+   baixado, não há como recuperar o que foi digitado.
    ========================================================================= */
-const CHAVE_RASCUNHO = 'avaliacao_desempenho_rascunho_v1';
 
 function capturarRascunho(){
   const campos = {
@@ -1138,16 +1133,6 @@ function capturarRascunho(){
     if (textarea) campos[`${pilar.id}Texto`] = textarea.value;
   });
   return campos;
-}
-
-function salvarRascunho(){
-  try {
-    localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(capturarRascunho()));
-    return true;
-  } catch (err) {
-    console.error('Não foi possível salvar o rascunho:', err);
-    return false;
-  }
 }
 
 function restaurarRascunho(campos){
@@ -1184,33 +1169,17 @@ function restaurarRascunho(campos){
   atualizarProgresso();
 }
 
-function limparRascunho(){
-  try { localStorage.removeItem(CHAVE_RASCUNHO); } catch (err) {}
-}
-
-/* Ao carregar a página, avisa se existe um rascunho salvo neste navegador */
-(function verificarRascunhoSalvo(){
-  let salvo = null;
-  let vieioDeArquivo = false;
-
-  if (window.__RASCUNHO_EMBUTIDO__) {
-    salvo = window.__RASCUNHO_EMBUTIDO__;
-    vieioDeArquivo = true;
-  } else {
-    try {
-      const bruto = localStorage.getItem(CHAVE_RASCUNHO);
-      if (bruto) salvo = JSON.parse(bruto);
-    } catch (err) { salvo = null; }
-  }
-
-  if (!salvo) return;
+/* A única fonte de um rascunho é o próprio arquivo baixado — se ele foi aberto com um
+   rascunho embutido, avisa e oferece continuar de onde parou. */
+(function verificarRascunhoEmbutido(){
+  if (!window.__RASCUNHO_EMBUTIDO__) return;
+  const salvo = window.__RASCUNHO_EMBUTIDO__;
 
   const dataFormatada = salvo.salvoEm ? new Date(salvo.salvoEm).toLocaleString('pt-BR') : '';
   const funcionario = buscarFuncionario(salvo.avaliado);
   const nomeAvaliado = funcionario ? funcionario.nomeExibicao : '';
-  const origemTexto = vieioDeArquivo ? 'Este arquivo contém um rascunho' : 'Encontramos um rascunho salvo neste navegador';
   document.getElementById('rascunhoBannerTexto').textContent =
-    `${origemTexto}${nomeAvaliado ? ' de ' + nomeAvaliado : ''}${dataFormatada ? ', de ' + dataFormatada : ''}.`;
+    `Este arquivo contém um rascunho${nomeAvaliado ? ' de ' + nomeAvaliado : ''}${dataFormatada ? ', de ' + dataFormatada : ''}.`;
   document.getElementById('rascunhoBanner').style.display = 'flex';
 
   document.getElementById('btnContinuarRascunho').addEventListener('click', () => {
@@ -1218,18 +1187,9 @@ function limparRascunho(){
     document.getElementById('rascunhoBanner').style.display = 'none';
   });
   document.getElementById('btnDescartarRascunho').addEventListener('click', () => {
-    limparRascunho();
     document.getElementById('rascunhoBanner').style.display = 'none';
   });
 })();
-
-document.getElementById('btnSalvarRascunho').addEventListener('click', () => {
-  const ok = salvarRascunho();
-  const status = document.getElementById('rascunhoStatus');
-  status.textContent = ok
-    ? `Rascunho salvo às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}. Você pode fechar esta página e continuar depois, neste mesmo navegador.`
-    : 'Não foi possível salvar o rascunho neste navegador.';
-});
 
 /* Baixa uma cópia completa do formulário (.html), com o rascunho atual embutido — dá para abrir
    esse arquivo depois, no mesmo computador ou em outro, e continuar de onde parou. */
@@ -1281,7 +1241,6 @@ form.addEventListener('submit', async (e) => {
   const { doc, nomeArquivo } = construirPDF(dados, protocolo);
   ultimoPDF = { doc, nomeArquivo };
   doc.save(nomeArquivo);
-  limparRascunho();
 
   let envioFalhou = false;
 
