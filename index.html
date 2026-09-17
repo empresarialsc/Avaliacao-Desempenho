@@ -199,11 +199,32 @@
   button.submit:active{ transform: translateY(1px); }
   button.submit:disabled{ background: #9AA0BE; box-shadow:none; cursor:default; }
   .actions .foot-note{ text-align:center; font-size:12.5px; color: var(--muted); margin-top:12px; }
+  .actions .rascunho-status{ text-align:center; font-size:12.5px; color: var(--s5); margin-top:8px; min-height:16px; }
+  .rascunho-botoes{ display:flex; gap:10px; margin-bottom:10px; }
+  @media (max-width: 480px){ .rascunho-botoes{ flex-direction:column; } }
+  button.btn-secundario{
+    flex:1; width:100%; background:#fff; color: var(--navy); border:1.5px solid var(--navy);
+    border-radius: 10px; padding: 13px 16px; font-family: var(--font-body); font-weight: 600;
+    font-size: 13.5px; cursor:pointer; transition: background .15s;
+  }
+  button.btn-secundario:hover{ background: var(--blue-soft); }
 
-  .-flag{
+  .demo-flag{
     background:#FFF6E9; border:1px solid #F0D9AE; color:#8A5A16;
     font-size:12.5px; border-radius:8px; padding:10px 13px; margin-bottom:20px;
   }
+  .rascunho-banner{
+    display:none; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    background: var(--blue-soft); border:1px solid #D6E9F6; color: var(--navy-ink);
+    font-size:13px; border-radius:8px; padding:13px 16px; margin-bottom:20px;
+  }
+  .rascunho-banner-botoes{ display:flex; gap:8px; flex:none; }
+  .rascunho-banner button{
+    font-family: var(--font-body); font-weight:600; font-size:12.5px; padding:8px 14px;
+    border-radius:6px; cursor:pointer; border:1px solid transparent;
+  }
+  #btnContinuarRascunho{ background: var(--navy); color:#fff; }
+  #btnDescartarRascunho{ background:#fff; border-color: var(--border); color: var(--navy-ink); }
 
   .success{ display:none; text-align:center; padding: 56px 20px 30px; }
   .success .check{
@@ -249,6 +270,14 @@
 
   <div id="demoFlag" class="demo-flag">Modo demonstração ativo: o documento é gerado normalmente, mas nenhum e-mail é enviado e a planilha não é atualizada. Desative em <code>CONFIG.MODO_DEMO</code> antes de publicar.</div>
 
+  <div id="rascunhoBanner" class="rascunho-banner">
+    <span id="rascunhoBannerTexto"></span>
+    <div class="rascunho-banner-botoes">
+      <button type="button" id="btnContinuarRascunho">Continuar de onde parei</button>
+      <button type="button" id="btnDescartarRascunho">Começar do zero</button>
+    </div>
+  </div>
+
   <div class="intro-card">
     <h2>Objetivo e Critérios de Avaliação</h2>
     <p>Este documento tem como objetivo apoiar o seu desenvolvimento profissional. Mais do que atribuir notas, a avaliação busca reconhecer os pontos fortes construídos até aqui e apontar, de forma clara e construtiva, as oportunidades de melhoria a serem trabalhadas nos próximos ciclos.</p>
@@ -259,7 +288,7 @@
       <strong>Escala de avaliação</strong>
       <ul>
         <li><span class="dot" style="background:var(--s1)"></span><span><b>1 — Não aderente:</b> desempenho significativamente abaixo do esperado; metas não são atingidas e há impacto negativo no resultado.</span></li>
-        <li><span class="dot" style="background:var(--s2)"></span><span><b>2 — Em desenvolvimento:</b> o colaborador demonstra esforço, mas ainda apresenta falhas frequentes; precisa de acompanhamento e treinamento.</span></li>
+        <li><span class="dot" style="background:var(--s2)"></span><span><b>2 — Em desenvolvimento:</b> apesar do colaborador demonstrar esforço, ainda precisa de acompanhamento e treinamento.</span></li>
         <li><span class="dot" style="background:var(--s3)"></span><span><b>3 — Consistente:</b> cumpre as metas e prazos de forma consistente; desempenho estável e satisfatório.</span></li>
         <li><span class="dot" style="background:var(--s4)"></span><span><b>4 — Forte desempenho:</b> supera expectativas em vários aspectos; entrega resultados de qualidade e contribui além do esperado.</span></li>
         <li><span class="dot" style="background:var(--s5)"></span><span><b>5 — Excepcional:</b> desempenho muito acima da média; é modelo para os demais, gera impacto positivo e inovação.</span></li>
@@ -370,8 +399,13 @@
     </section>
 
     <div class="actions">
+      <div class="rascunho-botoes">
+        <button type="button" class="btn-secundario" id="btnSalvarRascunho">Salvar rascunho</button>
+        <button type="button" class="btn-secundario" id="btnBaixarRascunho">Baixar rascunho (.html)</button>
+      </div>
       <button type="submit" class="submit" id="submitBtn">Gerar e enviar avaliação</button>
       <p class="foot-note">Um PDF é gerado automaticamente e enviado ao avaliador e ao avaliado, com cópia salva no Drive e registrada na planilha do escritório.</p>
+      <p class="rascunho-status" id="rascunhoStatus"></p>
     </div>
   </form>
 
@@ -397,12 +431,12 @@
    CONFIGURAÇÃO — preencha antes de publicar
    ========================================================================= */
 const CONFIG = {
-  MODO_DEMO: false,
+  MODO_DEMO: true,
   // URL do Web App do Google Apps Script (veja Code.gs / INSTRUCOES.md).
   // Um único endpoint recebe o PDF gerado no navegador e cuida de tudo do
   // lado do escritório: guarda o PDF no Drive, registra a linha na planilha
   // "Respostas" e envia o e-mail com o PDF anexado ao avaliador e ao avaliado.
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwhucztI8gJSfroIVribZVsRaXR4TBQtAFYQJTbDj04izkwNoQbYaly3qmLT5xBij__Pg/exec"
+  APPS_SCRIPT_URL: "SUA_URL_DO_APPS_SCRIPT"
 };
 
 document.getElementById('demoFlag').style.display = CONFIG.MODO_DEMO ? 'block' : 'none';
@@ -563,7 +597,7 @@ const OBJETIVO_TEXTO = [
 ];
 const ESCALA_TEXTO = [
   { nota: 1, descricao: 'Desempenho significativamente abaixo do esperado; metas não são atingidas e há impacto negativo no resultado.' },
-  { nota: 2, descricao: 'O colaborador demonstra esforço, mas ainda apresenta falhas frequentes; precisa de acompanhamento e treinamento.' },
+  { nota: 2, descricao: 'Apesar do colaborador demonstrar esforço, ainda precisa de acompanhamento e treinamento.' },
   { nota: 3, descricao: 'Cumpre as metas e prazos de forma consistente; desempenho estável e satisfatório.' },
   { nota: 4, descricao: 'Supera expectativas em vários aspectos; entrega resultados de qualidade e contribui além do esperado.' },
   { nota: 5, descricao: 'Desempenho muito acima da média; é modelo para os demais, gera impacto positivo e inovação.' }
@@ -1074,6 +1108,161 @@ async function enviarParaAppsScript(dados, protocolo, pdfBase64, nomeArquivo){
   return resultado;
 }
 
+/* =========================================================================
+   RASCUNHO — salva o preenchimento no navegador (localStorage) para o
+   avaliador continuar depois, antes de enviar a versão final. Fica salvo
+   apenas neste navegador/computador — não sincroniza entre dispositivos.
+   ========================================================================= */
+const CHAVE_RASCUNHO = 'avaliacao_desempenho_rascunho_v1';
+
+function capturarRascunho(){
+  const campos = {
+    departamento: document.getElementById('departamento').value,
+    ciclo: document.getElementById('ciclo').value,
+    avaliador: avaliadorSelect.value,
+    avaliadorEmail: document.getElementById('avaliadorEmail').value,
+    avaliado: avaliadoSelect.value,
+    avaliadoEmail: document.getElementById('avaliadoEmail').value,
+    pontosFortes: document.getElementById('pontosFortes').value,
+    pontosMelhoria: document.getElementById('pontosMelhoria').value,
+    salvoEm: new Date().toISOString(),
+    escalas: {}
+  };
+  PILARES.forEach(pilar => {
+    pilar.premissas.forEach(premissa => {
+      const campo = `${pilar.id}__${slug(premissa.nome)}`;
+      const el = document.querySelector(`input[name="${campo}"]:checked`);
+      if (el) campos.escalas[campo] = el.value;
+    });
+    const textarea = document.getElementById(`${pilar.id}Texto`);
+    if (textarea) campos[`${pilar.id}Texto`] = textarea.value;
+  });
+  return campos;
+}
+
+function salvarRascunho(){
+  try {
+    localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(capturarRascunho()));
+    return true;
+  } catch (err) {
+    console.error('Não foi possível salvar o rascunho:', err);
+    return false;
+  }
+}
+
+function restaurarRascunho(campos){
+  document.getElementById('departamento').value = campos.departamento || '';
+  document.getElementById('ciclo').value = campos.ciclo || '';
+  avaliadorSelect.value = campos.avaliador || '';
+  document.getElementById('avaliadorEmail').value = campos.avaliadorEmail || '';
+  avaliadoSelect.value = campos.avaliado || '';
+  document.getElementById('avaliadoEmail').value = campos.avaliadoEmail || '';
+
+  // Repopula matrícula/cargo e a visibilidade do pilar de Liderança a partir do avaliado restaurado
+  const funcionario = buscarFuncionario(avaliadoSelect.value);
+  matriculaInput.value = funcionario ? funcionario.matricula : '';
+  cargoInput.value = funcionario ? funcionario.cargoExibicao : '';
+  atualizarPilarLideranca();
+
+  Object.keys(campos.escalas || {}).forEach(campo => {
+    const valor = campos.escalas[campo];
+    const input = document.querySelector(`input[name="${campo}"][value="${valor}"]`);
+    if (input) {
+      input.checked = true;
+      input.dispatchEvent(new Event('change'));
+    }
+  });
+
+  PILARES.forEach(pilar => {
+    const textarea = document.getElementById(`${pilar.id}Texto`);
+    if (textarea && campos[`${pilar.id}Texto`] !== undefined) textarea.value = campos[`${pilar.id}Texto`];
+  });
+
+  document.getElementById('pontosFortes').value = campos.pontosFortes || '';
+  document.getElementById('pontosMelhoria').value = campos.pontosMelhoria || '';
+
+  atualizarProgresso();
+}
+
+function limparRascunho(){
+  try { localStorage.removeItem(CHAVE_RASCUNHO); } catch (err) {}
+}
+
+/* Ao carregar a página, avisa se existe um rascunho salvo neste navegador */
+(function verificarRascunhoSalvo(){
+  let salvo = null;
+  let vieioDeArquivo = false;
+
+  if (window.__RASCUNHO_EMBUTIDO__) {
+    salvo = window.__RASCUNHO_EMBUTIDO__;
+    vieioDeArquivo = true;
+  } else {
+    try {
+      const bruto = localStorage.getItem(CHAVE_RASCUNHO);
+      if (bruto) salvo = JSON.parse(bruto);
+    } catch (err) { salvo = null; }
+  }
+
+  if (!salvo) return;
+
+  const dataFormatada = salvo.salvoEm ? new Date(salvo.salvoEm).toLocaleString('pt-BR') : '';
+  const funcionario = buscarFuncionario(salvo.avaliado);
+  const nomeAvaliado = funcionario ? funcionario.nomeExibicao : '';
+  const origemTexto = vieioDeArquivo ? 'Este arquivo contém um rascunho' : 'Encontramos um rascunho salvo neste navegador';
+  document.getElementById('rascunhoBannerTexto').textContent =
+    `${origemTexto}${nomeAvaliado ? ' de ' + nomeAvaliado : ''}${dataFormatada ? ', de ' + dataFormatada : ''}.`;
+  document.getElementById('rascunhoBanner').style.display = 'flex';
+
+  document.getElementById('btnContinuarRascunho').addEventListener('click', () => {
+    restaurarRascunho(salvo);
+    document.getElementById('rascunhoBanner').style.display = 'none';
+  });
+  document.getElementById('btnDescartarRascunho').addEventListener('click', () => {
+    limparRascunho();
+    document.getElementById('rascunhoBanner').style.display = 'none';
+  });
+})();
+
+document.getElementById('btnSalvarRascunho').addEventListener('click', () => {
+  const ok = salvarRascunho();
+  const status = document.getElementById('rascunhoStatus');
+  status.textContent = ok
+    ? `Rascunho salvo às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}. Você pode fechar esta página e continuar depois, neste mesmo navegador.`
+    : 'Não foi possível salvar o rascunho neste navegador.';
+});
+
+/* Baixa uma cópia completa do formulário (.html), com o rascunho atual embutido — dá para abrir
+   esse arquivo depois, no mesmo computador ou em outro, e continuar de onde parou. */
+document.getElementById('btnBaixarRascunho').addEventListener('click', async () => {
+  const status = document.getElementById('rascunhoStatus');
+  try {
+    const rascunho = capturarRascunho();
+    const resposta = await fetch(window.location.href, { cache: 'no-store' });
+    if (!resposta.ok) throw new Error('Não foi possível obter uma cópia do formulário.');
+    let htmlOriginal = await resposta.text();
+
+    const scriptEmbutido = `<scr` + `ipt>window.__RASCUNHO_EMBUTIDO__ = ${JSON.stringify(rascunho)};</scr` + `ipt>\n`;
+    htmlOriginal = htmlOriginal.replace('<body>', '<body>\n' + scriptEmbutido);
+
+    const blob = new Blob([htmlOriginal], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const funcionario = buscarFuncionario(rascunho.avaliado);
+    const nomeArquivoBase = funcionario ? funcionario.nomeExibicao.replace(/\s+/g, '_') : 'rascunho';
+    link.href = url;
+    link.download = `Rascunho_Avaliacao_${nomeArquivoBase}.html`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    status.textContent = 'Arquivo do rascunho baixado. Abra-o quando quiser continuar de onde parou — em qualquer computador.';
+  } catch (err) {
+    console.error('Falha ao baixar o rascunho:', err);
+    status.textContent = 'Não foi possível gerar o arquivo do rascunho. Tente novamente pelo link original do formulário.';
+  }
+});
+
 /* ---------- Submit ---------- */
 const form = document.getElementById('form');
 const submitBtn = document.getElementById('submitBtn');
@@ -1092,6 +1281,7 @@ form.addEventListener('submit', async (e) => {
   const { doc, nomeArquivo } = construirPDF(dados, protocolo);
   ultimoPDF = { doc, nomeArquivo };
   doc.save(nomeArquivo);
+  limparRascunho();
 
   let envioFalhou = false;
 
